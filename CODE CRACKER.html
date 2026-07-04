@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Cracker - Security & Decryption Ecosystem</title>
+    <style>
+        /* --- CSS Custom Properties (Theme Variables) --- */
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --accent: #0f766e;
+            --accent-hover: #115e59;
+            --border: #e2e8f0;
+            --success: #16a34a;
+            --error: #dc2626;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --radius: 12px;
+            --transition: all 0.23s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #090d16;
+            --bg-secondary: #111827;
+            --bg-tertiary: #1f2937;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --accent: #14b8a6;
+            --accent-hover: #2dd4bf;
+            --border: #374151;
+            --success: #22c55e;
+            --error: #ef4444;
+        }
+
+        /* --- Reset & Core Layout Styles --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Optional Authentication Portal Shell --- */
+        #auth-portal {
+            position: fixed;
+            inset: 0;
+            background-color: var(--bg-primary);
+            z-index: 2000;
+            display: none; /* Controlled dynamically by initialization state */
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .auth-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        /* --- Main App Header Structure --- */
+        header {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 1.25rem 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+        }
+
+        .header-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .brand h1 {
+            font-size: 1.65rem;
+            font-weight: 800;
+            color: var(--accent);
+            letter-spacing: -0.03em;
+        }
+
+        .brand p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        nav {
+            display: flex;
+            gap: 0.25rem;
+            background-color: var(--bg-tertiary);
+            padding: 0.35rem;
+            border-radius: var(--radius);
+        }
+
+        .nav-tab {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.5rem 0.875rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border-radius: calc(var(--radius) - 4px);
+            transition: var(--transition);
+        }
+
+        .nav-tab.active {
+            background-color: var(--bg-secondary);
+            color: var(--accent);
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+        }
+
+        main {
+            max-width: 1000px;
+            width: 100%;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            flex: 1;
+        }
+
+        .tab-content {
+            display: none;
+            animation: appViewStageTransition 0.25s ease-out forwards;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes appViewStageTransition {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Structural Content Blocks & Inputs --- */
+        .card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        textarea, input[type="text"], input[type="password"], select {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.975rem;
+            transition: var(--transition);
+        }
+
+        textarea:focus, input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15);
+        }
+
+        /* --- Segment Grid Selection Matrix --- */
+        .difficulty-selector-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .difficulty-card {
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            padding: 0.875rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background-color: var(--bg-primary);
+        }
+
+        .difficulty-card:hover {
+            border-color: var(--accent);
+        }
+
+        .difficulty-card.active {
+            border-color: var(--accent);
+            background-color: rgba(20, 184, 166, 0.08);
+        }
+
+        .difficulty-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .difficulty-desc {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .actions-row {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+
+        button.btn {
+            padding: 0.65rem 1.25rem;
+            font-weight: 600;
+            border-radius: var(--radius);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.925rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary { background-color: var(--accent); color: white; }
+        .btn-primary:hover { background-color: var(--accent-hover); }
+        .btn-secondary { background-color: var(--bg-tertiary); color: var(--text-primary); border-color: var(--border); }
+        .btn-secondary:hover { background-color: var(--border); }
+
+        /* --- Outputs Panels --- */
+        .output-panel {
+            background-color: var(--bg-tertiary);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            border-left: 4px solid var(--accent);
+            margin-top: 1.5rem;
+        }
+        .output-panel.success { border-left-color: var(--success); }
+        .output-panel.error { border-left-color: var(--error); }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .metric-card {
+            background-color: var(--bg-secondary);
+            padding: 0.75rem;
+            border-radius: calc(var(--radius) - 4px);
+            border: 1px solid var(--border);
+        }
+
+        .metric-label { font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;}
+        .metric-value { font-size: 1.1rem; font-weight: 700; }
+
+        .collapsible-container { margin-top: 1.5rem; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+        .collapsible-trigger { width: 100%; text-align: left; background-color: var(--bg-tertiary); border: none; padding: 1rem; font-weight: 600; color: var(--text-primary); cursor: pointer; display: flex; justify-content: space-between; }
+        .collapsible-content { max-height: 0; overflow: hidden; transition: max-height 0.3s cubic-bezier(0, 1, 0, 1); background-color: var(--bg-secondary); }
+        .collapsible-content.open { max-height: 800px; overflow-y: auto; transition: max-height 0.3s cubic-bezier(1, 0, 1, 0); }
+
+        .debug-row { display: flex; justify-content: space-between; padding: 0.5rem 1rem; border-bottom: 1px solid var(--border); font-family: monospace; font-size: 0.85rem; }
+        .debug-row.matched { background-color: rgba(22, 163, 74, 0.12); color: var(--success); font-weight: bold; }
+
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border); font-size: 0.95rem; }
+        .badge { padding: 0.2rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; background-color: var(--bg-tertiary); color: var(--text-secondary); }
+
+        footer { text-align: center; padding: 2rem 1rem; color: var(--text-secondary); font-size: 0.85rem; border-top: 1px solid var(--border); background-color: var(--bg-secondary); margin-top: auto; }
+
+        @media (max-width: 640px) {
+            .header-container { flex-direction: column; align-items: flex-start; }
+            nav { width: 100%; overflow-x: auto; }
+            .difficulty-selector-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body data-theme="dark">
+
+    <!-- ACCESS CONTROL INTERCEPT GATEWAY (OPTIONAL SWITCHABLE MODE) -->
+    <div id="auth-portal">
+        <div class="auth-card">
+            <h2 style="color: var(--accent); margin-bottom: 0.5rem; font-weight: 800; font-size: 1.8rem;">Code Cracker</h2>
+            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 2rem;">Authorized Operations Verification Portal</p>
+            <form id="auth-form" onsubmit="event.preventDefault(); handleAuthSubmission();">
+                <div class="form-group" style="text-align: left;">
+                    <label for="auth-user">Operator Username</label>
+                    <input type="text" id="auth-user" autocomplete="username" placeholder="admin">
+                </div>
+                <div class="form-group" style="text-align: left; margin-bottom: 2rem;">
+                    <label for="auth-pass">Security Token Password</label>
+                    <input type="password" id="auth-pass" autocomplete="current-password" placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Authenticate Terminal</button>
+                <div id="auth-error-msg" style="color: var(--error); font-size: 0.85rem; margin-top: 1rem; font-weight: 600; min-height: 1.25rem;"></div>
+            </form>
+            <div style="margin-top: 1.5rem; font-size: 0.75rem; color: var(--text-secondary);">
+                Default Configuration: <code style="font-family: monospace;">admin</code> / <code style="font-family: monospace;">admin</code>
+            </div>
+        </div>
+    </div>
+
+    <!-- CORE SYSTEM INTERFACE STRUCTURE -->
+    <header id="app-header">
+        <div class="header-container">
+            <div class="brand">
+                <h1>Code Cracker</h1>
+                <p>Decode. Encode. Learn.</p>
+            </div>
+            <nav id="nav-bar">
+                <button class="nav-tab active" data-target="tab-home">Home</button>
+                <button class="nav-tab" data-target="tab-decode">Decode</button>
+                <button class="nav-tab" data-target="tab-encode">Encode</button>
+                <button class="nav-tab" data-target="tab-guide">Guide</button>
+                <button class="nav-tab" data-target="tab-history">History</button>
+                <button class="nav-tab" data-target="tab-settings">Settings</button>
+            </nav>
+        </div>
+    </header>
+
+    <main id="app-main">
+        <!-- HOME SECTOR VIEW -->
+        <section id="tab-home" class="tab-content active">
+            <div class="card">
+                <h2 class="card-title">Welcome to Code Cracker Framework</h2>
+                <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">An advanced analysis engine built exclusively for running autologous character-shift translation algorithms, verification matrix validation parsing, and cipher puzzle generation entirely execution isolated.</p>
+                <div class="actions-row">
+                    <button class="btn btn-primary" onclick="switchTab('tab-decode')">Initialize Decoder</button>
+                    <button class="btn btn-secondary" onclick="switchTab('tab-encode')">Initialize Encoder</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- DECODER SECTOR VIEW -->
+        <section id="tab-decode" class="tab-content">
+            <div class="card">
+                <h2 class="card-title">Auto-Match Decoder</h2>
+                <div class="form-group">
+                    <label for="decode-input">Ciphertext Sequence Vector</label>
+                    <textarea id="decode-input" rows="5" placeholder="Enter encrypted text matrix sequence... (e.g., YWZXY DTZW YJFR)"></textarea>
+                </div>
+                <div class="actions-row">
+                    <button class="btn btn-primary" id="btn-decode-run">Decode</button>
+                    <button class="btn btn-secondary" id="btn-decode-clear">Clear</button>
+                    <button class="btn btn-secondary" id="btn-decode-copy" disabled>Copy Result</button>
+                </div>
+
+                <div id="decode-output-wrapper" style="display: none;">
+                    <div id="decode-status-panel" class="output-panel">
+                        <div id="decode-msg-box" style="font-size: 1.1rem; font-weight: 700; font-family: monospace; word-break: break-all;"></div>
+                        <div class="metrics-grid">
+                            <div class="metric-card"><div class="metric-label">Secret Shift</div><div class="metric-value" id="m-shift">-</div></div>
+                            <div class="metric-card"><div class="metric-label">Characters</div><div class="metric-value" id="m-chars">0</div></div>
+                            <div class="metric-card"><div class="metric-label">Words</div><div class="metric-value" id="m-words">0</div></div>
+                            <div class="metric-card"><div class="metric-label">Compute Time</div><div class="metric-value" id="m-time">0ms</div></div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-container">
+                        <button class="collapsible-trigger" id="btn-toggle-matrix">
+                            <span>View Complete 26-Shift Permutation Table</span>
+                            <span id="matrix-icon">?</span>
+                        </button>
+                        <div class="collapsible-content" id="matrix-content"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ENCODER SECTOR VIEW -->
+        <section id="tab-encode" class="tab-content">
+            <div class="card">
+                <h2 class="card-title">Puzzle Encoder Engine</h2>
+                
+                <label>Select Difficulty Tier Matrix</label>
+                <div class="difficulty-selector-grid">
+                    <div class="difficulty-card active" data-difficulty="easy">
+                        <div class="difficulty-title" style="color: var(--success);">Easy Tier</div>
+                        <div class="difficulty-desc">Shift Offset: 2-4 Letters</div>
+                    </div>
+                    <div class="difficulty-card" data-difficulty="medium">
+                        <div class="difficulty-title" style="color: var(--accent);">Medium Tier</div>
+                        <div class="difficulty-desc">Shift Offset: 5-7 Letters</div>
+                    </div>
+                    <div class="difficulty-card" data-difficulty="hard">
+                        <div class="difficulty-title" style="color: var(--error);">Hard Tier</div>
+                        <div class="difficulty-desc">Shift Offset: 8+ Letters</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <label style="margin-bottom: 0;">Plaintext Core Sentence</label>
+                        <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; border-radius: 6px;" id="btn-random-phrase">Load Tier Phrase Template</button>
+                    </div>
+                    <input type="text" id="encode-input" placeholder="Type sentence sequence starting with a valid token word match...">
+                </div>
+
+                <div class="actions-row">
+                    <button class="btn btn-primary" id="btn-encode-run">Encode Matrix</button>
+                    <button class="btn btn-secondary" id="btn-encode-clear">Clear</button>
+                    <button class="btn btn-secondary" id="btn-encode-copy" disabled>Copy Cipher</button>
+                    <button class="btn btn-secondary" id="btn-encode-download" disabled>Download Text</button>
+                </div>
+
+                <div id="encode-output-wrapper" style="display: none;">
+                    <div class="output-panel success">
+                        <label>Generated Ciphertext</label>
+                        <div id="encode-output-text" style="font-family: monospace; font-size: 1.2rem; font-weight: 700; word-break: break-all; margin-bottom: 1rem;"></div>
+                        <div class="metrics-grid">
+                            <div class="metric-card"><div class="metric-label">Calculated Key Shift</div><div class="metric-value" id="e-metric-shift">-</div></div>
+                            <div class="metric-card"><div class="metric-label">Initial Reference Word</div><div class="metric-value" id="e-metric-word">-</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- GUIDE SECTOR VIEW -->
+        <section id="tab-guide" class="tab-content">
+            <div class="card">
+                <h2 class="card-title">System Specification Guide</h2>
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div>
+                        <h3 style="color: var(--accent); margin-bottom: 0.25rem;">Autogenous Constraints</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.95rem;">The cryptographic core relies on structural validation mechanics based directly on structural array properties inside your text context payload itself.</p>
+                    </div>
+                    <div style="background-color: var(--bg-tertiary); padding: 1rem; border-radius: var(--radius); font-family: monospace; font-size: 0.9rem;">
+                        Key Shift Value Calculation = Length Count of String Tokens within Initial Element Block
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- HISTORY SECTOR VIEW -->
+        <section id="tab-history" class="tab-content">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2 class="card-title" style="margin-bottom: 0;">Execution Ledger Logs</h2>
+                    <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" id="btn-clear-history">Purge Entries</button>
+                </div>
+                <div id="history-list-root"></div>
+            </div>
+        </section>
+
+        <!-- CONFIGURATION SECTOR VIEW -->
+        <section id="tab-settings" class="tab-content">
+            <div class="card">
+                <h2 class="card-title">System Properties</h2>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--border);">
+                    <div>
+                        <div style="font-weight: 600;">Dark Theme Mode UI</div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Toggle system color profiles instantly.</div>
+                    </div>
+                    <button class="btn btn-secondary" id="btn-toggle-theme">Toggle Theme</button>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--border);">
+                    <div>
+                        <div style="font-weight: 600;">Optional Session Lockdown Firewall</div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Enforce credentials authentication roadblock when opening the app.</div>
+                    </div>
+                    <button class="btn btn-secondary" id="btn-toggle-lockdown">Enable Lockdown</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer id="app-footer">
+        <p>&copy; 2026 Code Cracker Crypto-Analytical Application Node. Operating offline-isolated matrix context.</p>
+    </footer>
+
+    <script>
+        /* --- Cryptographic Engine Mechanics Module --- */
+        const CryptoEngine = {
+            shiftChar(char, shift, forward = true) {
+                const code = char.charCodeAt(0);
+                const isUpper = code >= 65 && code <= 90;
+                const isLower = code >= 97 && code <= 122;
+                if (!isUpper && !isLower) return char;
+
+                const base = isUpper ? 65 : 97;
+                const normalizedShift = ((shift % 26) + 26) % 26;
+                const offset = forward ? normalizedShift : -normalizedShift;
+                
+                let transformed = code - base + offset;
+                transformed = ((transformed % 26) + 26) % 26;
+                return String.fromCharCode(base + transformed);
+            },
+
+            transformString(str, shift, forward = true) {
+                return str.split('').map(c => this.shiftChar(c, shift, forward)).join('');
+            },
+
+            extractFirstWordAlphaLength(str) {
+                const tokens = str.trim().split(/\s+/);
+                if (!tokens || tokens[0] === "") return 0;
+                return tokens[0].replace(/[^a-zA-Z]/g, '').length;
+            },
+
+            bruteForceDecode(ciphertext) {
+                const results = [];
+                let matchedSolution = null;
+
+                for (let shift = 1; shift <= 26; shift++) {
+                    const decrypted = this.transformString(ciphertext, shift, false);
+                    const wordLen = this.extractFirstWordAlphaLength(decrypted);
+                    const isMatch = (wordLen === shift);
+
+                    const payload = { shift, text: decrypted, firstWordLength: wordLen, isValid: isMatch };
+                    results.push(payload);
+                    if (isMatch && !matchedSolution) matchedSolution = payload;
+                }
+                return { matchedSolution, matrix: results };
+            }
+        };
+
+        /* --- Phrase Bank Configuration Matrices --- */
+        const PhraseTemplates = {
+            easy: [
+                "Our code base is secure",
+                "New data link active",
+                "Key safe mode online"
+            ],
+            medium: [
+                "Secure compound perimeters immediately",
+                "Decrypt security protocols before accessing",
+                "Network analysis complete on data terminal"
+            ],
+            hard: [
+                "Cryptographic operations validated successfully across segments",
+                "Authentication parameters initialized within targeted runtime buffers",
+                "Decoupled communication telemetry sequences processed without errors"
+            ]
+        };
+
+        /* --- System Global Application State --- */
+        const AppState = {
+            theme: 'dark',
+            history: [],
+            selectedDifficulty: 'easy',
+            lockdownEnabled: false,
+            lastDecoded: '',
+            lastEncoded: '',
+
+            init() {
+                // Theme Config
+                this.theme = localStorage.getItem('cc_theme') || 'dark';
+                document.body.setAttribute('data-theme', this.theme);
+                
+                // History Config
+                try {
+                    this.history = JSON.parse(localStorage.getItem('cc_history')) || [];
+                } catch(e) { this.history = []; }
+
+                // Firewall Option Configuration
+                this.lockdownEnabled = localStorage.getItem('cc_lockdown') === 'true';
+                this.evaluateDisplayLayoutState();
+            },
+
+            evaluateDisplayLayoutState() {
+                const portal = document.getElementById('auth-portal');
+                const lockBtn = document.getElementById('btn-toggle-lockdown');
+                
+                if (lockBtn) {
+                    lockBtn.innerText = this.lockdownEnabled ? 'Disable Lockdown' : 'Enable Lockdown';
+                    lockBtn.className = this.lockdownEnabled ? 'btn btn-primary' : 'btn btn-secondary';
+                }
+
+                if (this.lockdownEnabled) {
+                    portal.style.display = 'flex';
+                } else {
+                    portal.style.display = 'none';
+                }
+            },
+
+            toggleTheme() {
+                this.theme = this.theme === 'light' ? 'dark' : 'light';
+                localStorage.setItem('cc_theme', this.theme);
+                document.body.setAttribute('data-theme', this.theme);
+            },
+
+            toggleLockdownMode() {
+                this.lockdownEnabled = !this.lockdownEnabled;
+                localStorage.setItem('cc_lockdown', this.lockdownEnabled);
+                this.evaluateDisplayLayoutState();
+            },
+
+            addHistory(type, original, result, shift) {
+                const entry = {
+                    id: Date.now(),
+                    timestamp: new Date().toLocaleTimeString(),
+                    type,
+                    result: result.substring(0, 50),
+                    shift
+                };
+                this.history.unshift(entry);
+                if (this.history.length > 15) this.history.pop();
+                localStorage.setItem('cc_history', JSON.stringify(this.history));
+                renderHistory();
+            },
+
+            purge() {
+                this.history = [];
+                localStorage.removeItem('cc_history');
+                renderHistory();
+            }
+        };
+
+        /* --- Authentication Portal Actions --- */
+        function handleAuthSubmission() {
+            const user = document.getElementById('auth-user').value.trim();
+            const pass = document.getElementById('auth-pass').value.trim();
+            const errBox = document.getElementById('auth-error-msg');
+
+            if (user === 'admin' && pass === 'admin') {
+                document.getElementById('auth-portal').style.display = 'none';
+            } else {
+                errBox.innerText = 'Access Refused: Invalid Credentials Signature.';
+                setTimeout(() => { errBox.innerText = ''; }, 3000);
+            }
+        }
+
+        /* --- Interface Coordination Logic Modules --- */
+        function switchTab(target) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+
+            const targetView = document.getElementById(target);
+            const targetBtn = document.querySelector(`[data-target="${target}"]`);
+            if (targetView) targetView.classList.add('active');
+            if (targetBtn) targetBtn.classList.add('active');
+        }
+
+        function renderHistory() {
+            const root = document.getElementById('history-list-root');
+            if (!root) return;
+
+            if (AppState.history.length === 0) {
+                root.innerHTML = `<div style="text-align:center; color:var(--text-secondary); padding:2rem; font-size:0.9rem;">No execution records logged.</div>`;
+                return;
+            }
+
+            root.innerHTML = AppState.history.map(item => `
+                <div class="history-item">
+                    <div>
+                        <span class="badge">${item.type}</span>
+                        <span style="font-family: monospace; font-weight:700; margin-left:0.5rem;">Shift: [${item.shift}]</span>
+                        <div style="font-family: monospace; font-size:0.875rem; margin-top:0.25rem; word-break:break-all;">${item.result}</div>
+                    </div>
+                    <div style="font-size:0.8rem; color:var(--text-secondary);">${item.timestamp}</div>
+                </div>
+            `).join('');
+        }
+
+        /* --- DOM Attachment Event Bindings Execution Loop --- */
+        document.addEventListener('DOMContentLoaded', () => {
+            AppState.init();
+            renderHistory();
+
+            // Dynamic Navigation Event routing Map
+            document.getElementById('nav-bar').addEventListener('click', (e) => {
+                const btn = e.target.closest('.nav-tab');
+                if (btn) switchTab(btn.dataset.target);
+            });
+
+            // Decoder Logic Operations Block
+            const decodeInput = document.getElementById('decode-input');
+            const decodeOutputWrapper = document.getElementById('decode-output-wrapper');
+            const decodeMsgBox = document.getElementById('decode-msg-box');
+            const matrixContent = document.getElementById('matrix-content');
+            const matrixIcon = document.getElementById('matrix-icon');
+            const btnDecodeCopy = document.getElementById('btn-decode-copy');
+
+            document.getElementById('btn-decode-run').addEventListener('click', () => {
+                const val = decodeInput.value.trim();
+                if (!val) return;
+
+                const start = performance.now();
+                const out = CryptoEngine.bruteForceDecode(val);
+                const end = performance.now();
+
+                decodeOutputWrapper.style.display = 'block';
+                matrixContent.innerHTML = '';
+                matrixContent.classList.remove('open');
+                matrixIcon.innerText = '?';
+
+                if (out.matchedSolution) {
+                    const sol = out.matchedSolution;
+                    document.getElementById('decode-status-panel').className = "output-panel success";
+                    decodeMsgBox.innerHTML = `<span style="color:var(--success)">[DECRYPTED]</span> ${sol.text}`;
+                    document.getElementById('m-shift').innerText = sol.shift;
+                    document.getElementById('m-chars').innerText = sol.text.length;
+                    document.getElementById('m-words').innerText = sol.text.split(/\s+/).length;
+                    AppState.lastDecoded = sol.text;
+                    btnDecodeCopy.disabled = false;
+                    AppState.addHistory('Decode', val, sol.text, sol.shift);
+                } else {
+                    document.getElementById('decode-status-panel').className = "output-panel error";
+                    decodeMsgBox.innerHTML = `No valid message found.`;
+                    document.getElementById('m-shift').innerText = 'N/A';
+                    document.getElementById('m-chars').innerText = val.length;
+                    document.getElementById('m-words').innerText = val.split(/\s+/).length;
+                    AppState.lastDecoded = '';
+                    btnDecodeCopy.disabled = true;
+                }
+                document.getElementById('m-time').innerText = `${Math.round(end - start)}ms`;
+
+                out.matrix.forEach(row => {
+                    const div = document.createElement('div');
+                    div.className = `debug-row ${row.isValid ? 'matched' : ''}`;
+                    div.innerHTML = `<span>Shift Key [${String(row.shift).padStart(2, '0')}]: ${row.text}</span><span>Length Match: ${row.firstWordLength} ${row.isValid ? '?' : ''}</span>`;
+                    matrixContent.appendChild(div);
+                });
+            });
+
+            document.getElementById('btn-decode-clear').addEventListener('click', () => {
+                decodeInput.value = '';
+                decodeOutputWrapper.style.display = 'none';
+                btnDecodeCopy.disabled = true;
+                AppState.lastDecoded = '';
+            });
+
+            btnDecodeCopy.addEventListener('click', () => {
+                if (AppState.lastDecoded) {
+                    navigator.clipboard.writeText(AppState.lastDecoded);
+                    alert('Plaintext payload string exported to clipboard successfully.');
+                }
+            });
+
+            document.getElementById('btn-toggle-matrix').addEventListener('click', () => {
+                const open = matrixContent.classList.toggle('open');
+                matrixIcon.innerText = open ? '?' : '?';
+            });
+
+            // Difficulty Matrix Selection Engine Routing
+            document.querySelectorAll('.difficulty-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.difficulty-card').forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+                    AppState.selectedDifficulty = card.dataset.difficulty;
+                });
+            });
+
+            document.getElementById('btn-random-phrase').addEventListener('click', () => {
+                const list = PhraseTemplates[AppState.selectedDifficulty];
+                const choice = list[Math.floor(Math.random() * list.length)];
+                document.getElementById('encode-input').value = choice;
+            });
+
+            // Encoder Logic Operations Block
+            const encodeInput = document.getElementById('encode-input');
+            const encodeOutputWrapper = document.getElementById('encode-output-wrapper');
+            const encodeOutputText = document.getElementById('encode-output-text');
+            const btnEncodeCopy = document.getElementById('btn-encode-copy');
+            const btnEncodeDownload = document.getElementById('btn-encode-download');
+
+            document.getElementById('btn-encode-run').addEventListener('click', () => {
+                const raw = encodeInput.value;
+                if (!raw.trim()) return;
+
+                const shift = CryptoEngine.extractFirstWordAlphaLength(raw);
+                if (shift === 0) {
+                    alert('Validation Failure: First isolated string token configuration must possess alphabetic characters.');
+                    return;
+                }
+
+                const outText = CryptoEngine.transformString(raw, shift, true);
+                encodeOutputWrapper.style.display = 'block';
+                encodeOutputText.innerText = outText;
+
+                document.getElementById('e-metric-shift').innerText = shift;
+                document.getElementById('e-metric-word').innerText = `"${raw.trim().split(/\s+/)[0]}" (${shift})`;
+
+                AppState.lastEncoded = outText;
+                btnEncodeCopy.disabled = false;
+                btnEncodeDownload.disabled = false;
+                AppState.addHistory('Encode', raw, outText, shift);
+            });
+
+            document.getElementById('btn-encode-clear').addEventListener('click', () => {
+                encodeInput.value = '';
+                encodeOutputWrapper.style.display = 'none';
+                btnEncodeCopy.disabled = true;
+                btnEncodeDownload.disabled = true;
+                AppState.lastEncoded = '';
+            });
+
+            btnEncodeCopy.addEventListener('click', () => {
+                if (AppState.lastEncoded) {
+                    navigator.clipboard.writeText(AppState.lastEncoded);
+                    alert('Ciphertext segment written to standard system clipboard context.');
+                }
+            });
+
+            btnEncodeDownload.addEventListener('click', () => {
+                if (!AppState.lastEncoded) return;
+                const blob = new Blob([AppState.lastEncoded], { type: 'text/plain;charset=utf-8' });
+                const el = document.createElement('a');
+                el.href = URL.createObjectURL(blob);
+                el.download = `code_cracker_export_${Date.now()}.txt`;
+                document.body.appendChild(el);
+                el.click();
+                document.body.removeChild(el);
+            });
+
+            document.getElementById('btn-toggle-theme').addEventListener('click', () => AppState.toggleTheme());
+            
+            document.getElementById('btn-toggle-lockdown').addEventListener('click', () => AppState.toggleLockdownMode());
+
+            document.getElementById('btn-clear-history').addEventListener('click', () => {
+                if (confirm('Confirm permanent deletion of historical activity execution logging vectors?')) AppState.purge();
+            });
+
+            // Keyboard Shortcuts Mapping Layer
+            window.addEventListener('keydown', (e) => {
+                if (e.altKey) {
+                    switch (e.key.toLowerCase()) {
+                        case 'h': e.preventDefault(); switchTab('tab-home'); break;
+                        case 'd': e.preventDefault(); switchTab('tab-decode'); break;
+                        case 'e': e.preventDefault(); switchTab('tab-encode'); break;
+                        case 'g': e.preventDefault(); switchTab('tab-guide'); break;
+                        case 'l': e.preventDefault(); switchTab('tab-history'); break;
+                        case 't': e.preventDefault(); AppState.toggleTheme(); break;
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</htm
